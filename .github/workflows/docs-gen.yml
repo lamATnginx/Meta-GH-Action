@@ -7,16 +7,15 @@ on:
 jobs:
     generate-docs:
         name: Generate docs from changes
-        if: ${{ contains(github.event.comment.body, '/generate-docs') }}
+        if: ${{ github.event.issue.pull_request && contains(github.event.comment.body, '/generate-docs') }}
         runs-on: ubuntu-latest
         env:
             GH_TOKEN: ${{ github.token || secrets.GITHUB_TOKEN }}
             GEN_DOCS_HOST: http://host.docker.internal:3131
+            REPO: ${{ github.repository }}
+            PR_NUMBER: ${{ github.event.issue.number }}
         steps:
           - name: Get all the metadata
-            env:
-                REPO: ${{ github.repository }}
-                PR_NUMBER: ${{ github.event.issue.number }}
             run: |
                 HTTP_CODE=$(curl -sSL \
                 -H "Authorization: Bearer $GH_TOKEN" \
@@ -36,9 +35,22 @@ jobs:
           - name: Set variables for LLM usage
             run: |
                 PR_DESCRIPTION=$(jq -r '.body // ""' pr.json)
-                DIFF_URL=$(jq -r '.diff_url' pr.json)
 
-                GIT_DIFF=$(curl -sSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.v3.diff" "$DIFF_URL")
+                HTTP_CODE=$(curl -sSL \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                -H "Accept: application/vnd.github.v3.diff" \
+                -w "%{http_code}" \
+                -o pr.diff \
+                "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER")
+
+                if [ "$HTTP_CODE" -ne 200 ]; then 
+                    echo "Failed to fetch metadata with code $HTTP_CODE."
+                    echo "Response body:"
+                    cat pr.diff
+                    exit 1
+                fi 
+
+                GIT_DIFF="$(cat pr.diff)"
 
                 {
                     echo "PR_DESCRIPTION<<EOF"
