@@ -1,19 +1,22 @@
 name: Generate new or edit documentation from changes
 
 on:
-    pull_request:
+    issue_comment:
+        types: [created]
 
 jobs:
     generate-docs:
         name: Generate docs from changes
+        if: ${{ github.event.issue.pull_request && contains(github.event.comment.body, '/generate-docs') }}
         runs-on: ubuntu-latest
         env:
             GH_TOKEN: ${{ github.token }}
+            GEN_DOCS_HOST: http://host.docker.internal:3131
         steps:
           - name: Get all the metadata
             env:
                 REPO: ${{ github.repository }}
-                PR_NUMBER: ${{ github.event.pull_request.number }}
+                PR_NUMBER: 1
             run: |
                 curl -sSL \
                 -H "Authorization: Bearer $GH_TOKEN" \
@@ -35,4 +38,13 @@ jobs:
                     echo "$GIT_DIFF"
                     echo "EOF"
                 } >> "$GITHUB_ENV"
-                 
+          - name: Generate docs 
+            run: |
+                jq -n \
+                --arg git_diff "$GIT_DIFF" \
+                --arg user_summary_prompt "$PR_DESCRIPTION" \
+                '{ delivery: "github", git_data: { git_diff: $git_diff }, user_summary_prompt: $user_summary_prompt}' > payload.json
+
+                curl --location "${GEN_DOCS_HOST}/generate-docs" \
+                --header "Content-Type: application/json" \
+                --data @payload.json
