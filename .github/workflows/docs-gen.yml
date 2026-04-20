@@ -1,0 +1,16 @@
+name: Generate new or edit documentation from changes
+
+on:
+    pull_request:
+
+jobs:
+    generate-docs:
+        name: Generate docs from changes
+        runs-on: ubuntu-latest
+        steps:
+          - name: Get all metadata
+            run: |
+                echo "PR number: ${{ github.event.pull_request.number }}"
+                echo "Head branch: ${{ github.head_ref }}"
+                echo "Base branch: ${{ github.base_ref }}"
+                echo "Repo: ${{ github.repository }}"
