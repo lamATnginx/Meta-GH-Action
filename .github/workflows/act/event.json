@@ -1,0 +1,16 @@
+{
+  "issue": {
+    "number": 1,
+    "pull_request": {
+      "url": "https://api.github.com/repos/lamATnginx/Meta-GH-Action/pulls/1"
+    }
+  },
+  "comment": {
+    "body": "/generate-docs"
+  },
+  "repository": {
+    "full_name": "lamATnginx/Meta-GH-Action",
+    "name": "Meta-GH-Action",
+    "owner": { "login": "lamATnginx" }
+  }
+}
